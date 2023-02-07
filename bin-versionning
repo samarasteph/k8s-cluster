@@ -1,0 +1,14 @@
+#!/usr/bin/zsh
+
+# https://github.com/containerd/containerd/releases
+CONTAINERD_VERSION="1.6.14"
+# https://github.com/opencontainers/runc/releases
+RUNC_VERSION="v1.1.4"
+# https://github.com/containernetworking/cni/releases
+CNI_VERSION="v1.1.0"
+
+K8S_RELEASE="$(curl -sSL https://dl.k8s.io/release/stable.txt)"
+K8S_SYSTEMD_RELEASE_VERSION="v0.4.0"
+ARCH="amd64"
+# https://github.com/kubernetes-sigs/cri-tools
+CRICTL_VERSION="v1.26.0"
