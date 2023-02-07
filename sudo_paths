@@ -1,0 +1,4 @@
+
+## Add /usr/local/bin path to sudo command. To run kubadm commands
+
+Defaults secure_path += "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin"
