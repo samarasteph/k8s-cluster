@@ -2,10 +2,23 @@
 
 echo '\n**** Starting K8s intallation ****\n'
 
-export DEBIAN_FRONTEND=noninteractive
+# install dependencies for kubernetes
+DEPS="socat conntrack"
 
-apt-get install -y socat conntrack
+if [ -x "$(which yum)" ]; then
+	yum install -y ${DEPS}
+fi
 
+if [ -x "$(which apt-get)" ]; then
+    export DEBIAN_FRONTEND=noninteractive
+	apt-get install -y ${DEPS}
+fi
+	
+if [ -x "$(which apk)" ]; then
+	apk update
+	apk upgrade
+	apk add socat conntrack-tools
+fi
 sudo swapoff -a
 
 cat <<EOF |tee /etc/modules-load.d/k8s.conf
@@ -24,14 +37,17 @@ EOF
 # restart
 sysctl --system
 
-# bin repo folder is shared in /vagrant/bin
-source /vagrant/bin-versionning
-cd /vagrant/bin
+# copy sudoers additional path
+cp vagrant-host/sudo_paths /etc/sudoers.d/
+
+# bin repo folder is shared in vagrant-host/bin
+source vagrant-host/bin-versionning
+cd vagrant-host/bin
 
 # Containerd installation
 echo "\n**** Containerd installation ****\n"
 
-tar Cxvzf /usr/local/ containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz  #> /dev/null
+tar xvzf containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz  -C /usr/local/ #> /dev/null
 cp containerd.service /etc/systemd/system
 systemctl daemon-reload 
 systemctl enable --now containerd
@@ -45,11 +61,11 @@ install -m 755 runc.amd64 /usr/local/sbin/runc  #> /dev/null
 # cni plugins install
 
 mkdir -p /opt/cni/bin/
-tar Cxvzf /opt/cni/bin/  cni-plugins-linux-amd64-${CNI_VERSION}.tgz     #> /dev/null
+tar xvzf cni-plugins-linux-amd64-${CNI_VERSION}.tgz  -C /opt/cni/bin/  #> /dev/null
 
 # modify containerd configuration to set systemd cgroup
 mkdir -p /etc/containerd
-containerd config default|tee /etc/containerd/config.toml    > /dev/null
+/usr/local/bin/containerd config default|tee /etc/containerd/config.toml    > /dev/null
 ### vi /etc/containerd/config.toml 
 sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/g' /etc/containerd/config.toml
 systemctl restart containerd
@@ -64,8 +80,8 @@ tar -C $DOWNLOAD_DIR -xz -f crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz
 
 #configure containerd endpoints with crictl
 CONTAINERD_SOCKET="unix:///var/run/containerd/containerd.sock"
-crictl config --set runtime-endpoint=${CONTAINERD_SOCKET} 
-crictl config --set image-endpoint=${CONTAINERD_SOCKET} 
+${DOWNLOAD_DIR}/crictl config --set runtime-endpoint=${CONTAINERD_SOCKET} 
+${DOWNLOAD_DIR}/crictl config --set image-endpoint=${CONTAINERD_SOCKET} 
 
 echo "\n**** kubeadm & kubelet installation ****\n"
 

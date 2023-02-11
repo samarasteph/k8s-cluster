@@ -13,6 +13,9 @@ Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = "hashicorp/bionic64"
+	config.vm.box = "centos/7"
+  #config.vm.box = "generic/alpine312"
+
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -38,8 +41,6 @@ Vagrant.configure("2") do |config|
   # Bridged networks make the machine appear as another physical device on
   # your network.
   # config.vm.network "public_network"
-
-  config.vm.network "private_network", type: "dhcp", name: "vboxnet1"
 
   config.vm.define :master1 do |master1|
     master1.vm.hostname = "master1"
@@ -74,13 +75,27 @@ Vagrant.configure("2") do |config|
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
   #
-  config.vm.provider "virtualbox" do |vb|
+  config.vm.provider "virtualbox" do |vbox, override|
   #   # Display the VirtualBox GUI when booting the machine
   #   vb.gui = true
   #
   #   # Customize the amount of memory on the VM:
-    vb.memory = "4096"
-    vb.cpus = 2
+    vbox.cpus = 2
+    vbox.memory = "4096"
+
+    override.vm.network "private_network", type: "dhcp", name: "vboxnet1"
+  end
+
+  config.vm.provider "libvirt" do |lbvrt, override|
+    lbvrt.cpus = 2 
+    lbvrt.memory = "4096"
+
+    override.vm.network "private_network", type: "dhcp", name: "k8s-network"
+  end
+ 
+  config.vm.provider "vmware_desktop" do |vwr|
+    vwr.vmx["memsize"] = "1024"
+    vwr.vmx["numvcpus"] = "2"
   end
   #
   # View the documentation for the provider you are using for more
@@ -94,6 +109,7 @@ Vagrant.configure("2") do |config|
   #   apt-get install -y apache2
   # SHELL
 
+  config.vm.synced_folder "./", "/home/vagrant/vagrant-host"
   config.vm.provision "shell", path: "./k8s-install.sh"
 
 end
